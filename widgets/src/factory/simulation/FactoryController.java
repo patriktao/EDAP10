@@ -8,26 +8,28 @@ public class FactoryController {
 
 	static class Monitor {
 		Conveyor conv; 
-		boolean paint_finished;
+		boolean paint_finished = false;
+		boolean press_finished = false;
 		
 		public Monitor (Conveyor conv) {
 			this.conv = conv;
-			this.paint_finished = false;
 		}
 		
 		public synchronized void pressConvOn() throws InterruptedException{
-			while(paint_finished == false) { //vänta på att paint ska vara klar, jag sovar medans.
+			while(paint_finished || press_finished) { //vänta på att paint ska vara klar, jag sovar medans.
 				 wait();
 			}
 			conv.on(); //fortsätt bandet
 		}
 		
-		public synchronized void paintConvOn() throws InterruptedException{
+		public synchronized void paintFinished() {
+			paint_finished = !paint_finished;
 			notifyAll(); //Paint är klar, väck press!
 		}
 		
-		public synchronized void paintFinished(boolean bool) {
-			paint_finished = bool;
+		public synchronized void pressFinished() {
+			press_finished = !press_finished;
+			notifyAll();
 		}
 		
 		public synchronized void convOff() {
@@ -40,8 +42,10 @@ public class FactoryController {
 		while (true) {
 			try {
 				press.waitFor(Widget.GREEN_BLOB);
+				mon.pressFinished();
 				mon.convOff();
 				press.performAction();
+				mon.pressFinished();
 				mon.pressConvOn(); //Vi väntar på att paint ska vara färdigt och sen kan vi köra bandet
 			} catch (InterruptedException e) {
 				throw new Error(e);
@@ -54,10 +58,11 @@ public class FactoryController {
 		while (true) {
 			try {
 				paint.waitFor(Widget.ORANGE_MARBLE);
+				mon.paintFinished();
 				mon.convOff(); //Stannar bandet 
 				paint.performAction();
-				mon.paintFinished(true); //ändrar villkoret
-				mon.paintConvOn(); //notifyar pressen att vi är klara!
+				mon.paintFinished();
+				mon.pressConvOn();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
