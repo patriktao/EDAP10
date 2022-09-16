@@ -8,27 +8,27 @@ public class FactoryController {
 
 	static class Monitor {
 		Conveyor conv; 
-		boolean paint_finished = false;
-		boolean press_finished = false;
+		boolean painting = false;
+		boolean pressing = false;
 		
 		public Monitor (Conveyor conv) {
 			this.conv = conv;
 		}
 		
 		public synchronized void pressConvOn() throws InterruptedException{
-			while(paint_finished || press_finished) { //vänta på att paint ska vara klar, jag sovar medans.
+			while(painting || pressing) { //vänta på att paint ska vara klar, jag sovar medans.
 				 wait();
 			}
 			conv.on(); //fortsätt bandet
 		}
 		
 		public synchronized void paintFinished() {
-			paint_finished = !paint_finished;
+			painting = !painting;
 			notifyAll(); //Paint är klar, väck press!
 		}
 		
 		public synchronized void pressFinished() {
-			press_finished = !press_finished;
+			pressing = !pressing;
 			notifyAll();
 		}
 		
@@ -42,10 +42,10 @@ public class FactoryController {
 		while (true) {
 			try {
 				press.waitFor(Widget.GREEN_BLOB);
-				mon.pressFinished();
+				mon.pressFinished(); //pressing true
 				mon.convOff();
 				press.performAction();
-				mon.pressFinished();
+				mon.pressFinished(); //pressing false
 				mon.pressConvOn(); //Vi väntar på att paint ska vara färdigt och sen kan vi köra bandet
 			} catch (InterruptedException e) {
 				throw new Error(e);

@@ -14,19 +14,15 @@ public class TrainSimulation {
 			busySegments = new HashSet<>();
 		}
 
-		public synchronized boolean isBusy(Segment s) throws InterruptedException {
-			return busySegments.contains(s);
-		}
-
 		public synchronized void remove(Segment s) throws InterruptedException {
 			busySegments.remove(s);
-			// notifyAll();
+			notifyAll();
 		}
 
 		public synchronized void add(Segment s) throws InterruptedException {
-			// while (isBusy(s)) {
-			//	wait();
-			//}
+			 while (busySegments.contains(s)) {
+				wait();
+			}
 			busySegments.add(s);
 		}
 	}
