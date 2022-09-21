@@ -4,7 +4,6 @@ import lift.LiftView;
 import lift.Passenger;
 
 public class LiftMonitor {
-
 	private int[] toEnter = new int[Main.NBR_FLOORS];
 	private int[] toExit = new int[Main.NBR_FLOORS];
 	private int currentFloor;
@@ -23,11 +22,7 @@ public class LiftMonitor {
 		this.movement = new ArrayDeque<Integer>();
 	}
 
-	public synchronized void setFloor(int floor) {
-		currentFloor = floor;
-	}
-
-	/* * Returns the state whether the lift is moving or not */
+	/* Returns the state whether the lift is moving or not */
 	public synchronized boolean isMoving() {
 		return moving;
 	}
@@ -43,20 +38,20 @@ public class LiftMonitor {
 		return passengersToLift.isEmpty() && passengersInLift == 0;
 	}
 
+
+	/* Is there anyone entering or exiting the lift? */
+	public synchronized boolean personEntersOrExistsLift() {
+		return !movement.isEmpty();
+	}
+
 	public synchronized void openDoor(int floor) {
 		view.openDoors(floor);
 		closedDoors = false;
 		notifyAll();
 	}
-
-	/* Is there anyone entering or exiting the lift? */
-	public synchronized boolean passengersEnteringOrExiting() {
-		return !movement.isEmpty();
-	}
-
 	public synchronized void closeDoor(int floor) throws InterruptedException {
 		while ((toEnter[floor] > 0 && passengersInLift < Main.MAX_PASSENGERS) || toExit[floor] > 0
-				|| passengersEnteringOrExiting()) {
+				|| personEntersOrExistsLift()) {
 			wait();
 		}
 		closedDoors = true;
@@ -64,7 +59,7 @@ public class LiftMonitor {
 	}
 
 	public synchronized void handleDoors(int floor) throws InterruptedException {
-		setFloor(floor);
+		currentFloor = floor;
 		StopIfFinished();
 		if (passengersInLift < Main.MAX_PASSENGERS && (toEnter[floor] > 0 || toExit[floor] > 0)) {
 			// Lift is not full and there are passengers waiting
@@ -77,7 +72,7 @@ public class LiftMonitor {
 		}
 	}
 
-	public synchronized void enter(Passenger pass, int fromFloor) throws InterruptedException {
+	public synchronized void enter(int fromFloor) throws InterruptedException {
 		toEnter[fromFloor]++;
 		passengersToLift.add(0);
 		moving = true;
@@ -90,14 +85,7 @@ public class LiftMonitor {
 		passengersInLift++;
 	}
 
-	public synchronized void notify_entered(int fromFloor) {
-		movement.pop();
-		if (!passengersEnteringOrExiting()) {
-			notifyAll();
-		}
-	}
-
-	public synchronized void exit(Passenger pass, int toFloor) throws InterruptedException {
+	public synchronized void exit(int toFloor) throws InterruptedException {
 		toExit[toFloor]++;
 		while (this.currentFloor != toFloor || closedDoors) {
 			wait();
@@ -106,11 +94,18 @@ public class LiftMonitor {
 		toExit[toFloor]--;
 		passengersInLift--;
 	}
+	
+	public synchronized void notify_entered() {
+		movement.pop();
+		if (!personEntersOrExistsLift()) {
+			notifyAll();
+		}
+	}
 
-	public synchronized void notify_exited(int toFloor) {
+	public synchronized void notify_exited() {
 		passengersToLift.pop();
 		movement.pop();
-		if (!passengersEnteringOrExiting()) {
+		if (!personEntersOrExistsLift()) {
 			notifyAll();
 		}
 	}
