@@ -10,17 +10,17 @@ public class Main {
 	public static void simulateLift(LiftView view, LiftMonitor mon) {
 		try {
 			while (true) {
-				if (mon.moving()) {
+				if (mon.isMoving()) {
 					for (int i = 0; i < NBR_FLOORS - 1; i++) {
 						mon.handleDoors(i);
-						if(mon.NoMorePassengers()) {
+						if(mon.noMorePassengers()) {
 							return;
 						}
 						view.moveLift(i, i + 1);
 					}
 					for (int i = NBR_FLOORS - 1; i > 0; i--) {
 						mon.handleDoors(i);
-						if(mon.NoMorePassengers()) {
+						if(mon.noMorePassengers()) {
 							return;
 						}
 						view.moveLift(i, i - 1);
@@ -38,13 +38,21 @@ public class Main {
 			int fromFloor = pass.getStartFloor();
 			int toFloor = pass.getDestinationFloor();
 			pass.begin(); // walk in (from left)
+			
 			mon.enter(pass, fromFloor);
-			mon.exit(pass, toFloor);
+			pass.enterLift();
+			mon.notify_entered(fromFloor);
+		
+			mon.exit(pass, toFloor); 
+			pass.exitLift();
+			mon.notify_exited(toFloor);
+			
 			pass.end();
 		} catch (InterruptedException e) {
 			throw new Error(e);
 		}
 	}
+	
 
 	public static void main(String[] args) {
 		LiftView view = new LiftView(NBR_FLOORS, MAX_PASSENGERS);
@@ -57,6 +65,5 @@ public class Main {
 
 		// Lift
 		new Thread(() -> simulateLift(view, mon)).start();
-
 	}
 }

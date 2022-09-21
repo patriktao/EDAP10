@@ -9,86 +9,110 @@ public class LiftMonitor {
 	private int[] toExit = new int[Main.NBR_FLOORS];
 	private int currentFloor;
 	private int passengersInLift;
-	private LiftView view;
 	private boolean closedDoors = true;
 	private boolean moving = false;
-	private ArrayDeque<Integer>stack = new ArrayDeque<Integer>();
+	private ArrayDeque<Integer> passengersToLift;
+	private ArrayDeque<Integer> movement;
+	private LiftView view;
 
 	public LiftMonitor(LiftView view) {
 		this.passengersInLift = 0;
 		this.currentFloor = 0;
 		this.view = view;
+		this.passengersToLift = new ArrayDeque<Integer>();
+		this.movement = new ArrayDeque<Integer>();
 	}
 
 	public synchronized void setFloor(int floor) {
 		currentFloor = floor;
 	}
 
-	public synchronized int getFloor() {
-		return currentFloor;
-	}
-
-	public synchronized boolean moving() {
+	/* * Returns the state whether the lift is moving or not */
+	public synchronized boolean isMoving() {
 		return moving;
 	}
-	
-	public synchronized boolean NoMorePassengers() {
-		return stack.isEmpty() && passengersInLift == 0;
+
+	/* Stops the elevator if there are no more passengers left */
+	private synchronized void StopIfFinished() {
+		if (noMorePassengers()) {
+			moving = false;
+		}
+	}
+	/* Checks if there are no more passengers */
+	public synchronized boolean noMorePassengers() {
+		return passengersToLift.isEmpty() && passengersInLift == 0;
+	}
+
+	public synchronized void openDoor(int floor) {
+		view.openDoors(floor);
+		closedDoors = false;
+		notifyAll();
+	}
+
+	/* Is there anyone entering or exiting the lift? */
+	public synchronized boolean passengersEnteringOrExiting() {
+		return !movement.isEmpty();
+	}
+
+	public synchronized void closeDoor(int floor) throws InterruptedException {
+		while ((toEnter[floor] > 0 && passengersInLift < Main.MAX_PASSENGERS) || toExit[floor] > 0
+				|| passengersEnteringOrExiting()) {
+			wait();
+		}
+		closedDoors = true;
+		view.closeDoors();
 	}
 
 	public synchronized void handleDoors(int floor) throws InterruptedException {
 		setFloor(floor);
-		if(NoMorePassengers()) {
-			moving = false;
-		}
-		if (passengersInLift < Main.MAX_PASSENGERS) { // kan släppa av och ta in folk
-			if (toEnter[floor] > 0 || toExit[floor] > 0) {
-				System.out.println("Våning" + floor + ",ToEnter:" + toEnter[floor]);
-				view.openDoors(floor);
-				closedDoors = false;
-				notifyAll();
-				while ((toEnter[floor] > 0 || toExit[floor] > 0) && passengersInLift < Main.MAX_PASSENGERS) {
-					wait();
-				}
-				view.closeDoors();
-				closedDoors = true;
-			}
-		} else { // kan bara släppa av
-			if (toExit[floor] > 0) {
-				view.openDoors(floor);
-				closedDoors = false;
-				notifyAll();
-				while (toExit[floor] > 0) {
-					wait();
-				}
-				view.closeDoors();
-				closedDoors = true;
-			}
+		StopIfFinished();
+		if (passengersInLift < Main.MAX_PASSENGERS && (toEnter[floor] > 0 || toExit[floor] > 0)) {
+			// Lift is not full and there are passengers waiting
+			openDoor(floor);
+			closeDoor(floor);
+		} else if (toExit[floor] > 0) {
+			// Lift is full and can let passengers exit
+			openDoor(floor);
+			closeDoor(floor);
 		}
 	}
 
 	public synchronized void enter(Passenger pass, int fromFloor) throws InterruptedException {
 		toEnter[fromFloor]++;
-		stack.add(1);
+		passengersToLift.add(0);
 		moving = true;
-		while (getFloor() != fromFloor || passengersInLift >= Main.MAX_PASSENGERS || closedDoors) {
+		notifyAll(); // Notify that a passenger has arrived
+		while (this.currentFloor != fromFloor || passengersInLift == Main.MAX_PASSENGERS || closedDoors) {
 			wait();
 		}
-		pass.enterLift(); // step inside
+		movement.add(0);
 		toEnter[fromFloor]--;
 		passengersInLift++;
-		notifyAll();
+	}
+
+	public synchronized void notify_entered(int fromFloor) {
+		movement.pop();
+		if (!passengersEnteringOrExiting()) {
+			notifyAll();
+		}
 	}
 
 	public synchronized void exit(Passenger pass, int toFloor) throws InterruptedException {
 		toExit[toFloor]++;
-		while (getFloor() != toFloor || closedDoors) {
+		while (this.currentFloor != toFloor || closedDoors) {
 			wait();
 		}
-		pass.exitLift(); // step outside
+		movement.add(0);
 		toExit[toFloor]--;
 		passengersInLift--;
-		stack.pop();
-		notifyAll();
 	}
+
+	public synchronized void notify_exited(int toFloor) {
+		passengersToLift.pop();
+		movement.pop();
+		if (!passengersEnteringOrExiting()) {
+			notifyAll();
+		}
+	}
+
 }
