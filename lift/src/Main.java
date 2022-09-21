@@ -3,19 +3,27 @@ import lift.Passenger;
 
 public class Main {
 
-	protected static final int NBR_FLOORS = 7, MAX_PASSENGERS = 4, TOTAL_PASSENGERS = 20;
+	protected static final int NBR_FLOORS = 7;
+	protected static final int MAX_PASSENGERS = 4;
+	protected static final int TOTAL_PASSENGERS = 20;
 
 	public static void simulateLift(LiftView view, LiftMonitor mon) {
 		try {
 			while (true) {
 				if (mon.moving()) {
 					for (int i = 0; i < NBR_FLOORS - 1; i++) {
+						mon.handleDoors(i);
+						if(mon.NoMorePassengers()) {
+							return;
+						}
 						view.moveLift(i, i + 1);
-						mon.handleDoors(i + 1);
 					}
 					for (int i = NBR_FLOORS - 1; i > 0; i--) {
+						mon.handleDoors(i);
+						if(mon.NoMorePassengers()) {
+							return;
+						}
 						view.moveLift(i, i - 1);
-						mon.handleDoors(i - 1);
 					}
 				}
 			}
