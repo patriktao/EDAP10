@@ -15,16 +15,10 @@ public class LiftThread extends Thread {
 				if (mon.isMoving()) {
 					for (int i = 0; i < Main.NBR_FLOORS - 1; i++) {
 						mon.handleDoors(i);
-						if(mon.noMorePassengers()) {
-							return;
-						}
 						view.moveLift(i, i + 1);
 					}
 					for (int i = Main.NBR_FLOORS - 1; i > 0; i--) {
 						mon.handleDoors(i);
-						if(mon.noMorePassengers()) {
-							return;
-						}
 						view.moveLift(i, i - 1);
 					}
 				}

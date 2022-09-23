@@ -5,7 +5,7 @@ public class Main {
 
 	protected static final int NBR_FLOORS = 7;
 	protected static final int MAX_PASSENGERS = 4;
-	protected static final int TOTAL_PASSENGERS = 20;
+	protected static final int TOTAL_PASSENGERS = 5;
 
 	public static void main(String[] args) {
 		LiftView view = new LiftView(NBR_FLOORS, MAX_PASSENGERS);
