@@ -107,6 +107,7 @@ public class CodeBreaker implements SnifferCallback {
 			;
 		});
 
+		//Why doesn't this need to be in a SwingUtilities? addActionListener körs från EDT och därför behövs inte SwingUtilities
 		cancelButton.addActionListener(e -> {
 			task.cancel(true);
 			int barValue = progressItem.getProgressBar().getValue();
@@ -120,10 +121,8 @@ public class CodeBreaker implements SnifferCallback {
 		removeButton.addActionListener(e -> {
 			progressList.remove(progressItem);
 			progressList.remove(removeButton);
-			SwingUtilities.invokeLater(() -> {
-				mainProgressBar.setValue(mainProgressBar.getValue() - 1000000);
-				mainProgressBar.setMaximum(mainProgressBar.getMaximum() - 1000000);
-			});
+			mainProgressBar.setValue(mainProgressBar.getValue() - 1000000);
+			mainProgressBar.setMaximum(mainProgressBar.getMaximum() - 1000000);
 		});
 	}
 
