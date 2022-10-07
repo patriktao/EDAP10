@@ -70,10 +70,13 @@ public class WashingProgram3 extends ActorThread<WashingMessage> {
             
             // If we end up here, it means the program was interrupt()'ed:
             // set all controllers to idle
-
-            temp.send(new WashingMessage(this, TEMP_IDLE));
-            water.send(new WashingMessage(this, WATER_IDLE));
-            spin.send(new WashingMessage(this, SPIN_OFF));
+        	try {
+        		temp.send(new WashingMessage(this, TEMP_IDLE));
+        		water.send(new WashingMessage(this, WATER_IDLE));
+        		spin.send(new WashingMessage(this, SPIN_OFF));        		
+        	} catch(InterruptedException e1) {
+        		e1.printStackTrace();
+        	}
             System.out.println("washing program terminated");
         }
     }
