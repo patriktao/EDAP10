@@ -26,6 +26,7 @@ struct intset *
 intset_create()
 {
   struct intset *s = malloc(sizeof(struct intset));
+  pthread_mutex_init(&s->mutex, NULL);
 
   // if memory allocation fails, terminate with an error
   if(s == NULL) {
@@ -33,14 +34,12 @@ intset_create()
     exit(1);
   }
 
-  pthread_mutex_init(&s->mutex, NULL);
   s->size = 0;
   s->allocated = 10;
   s->data = malloc(sizeof(int) * s->allocated);
   for (int i = 0; i < s->allocated; i++) {
     s->data[i] = EMPTY_SLOT;
   }
-
   return s;
 }
 
@@ -50,10 +49,7 @@ intset_create()
 static int
 index(struct intset *s, int a)
 {
-  pthread_mutex_lock(&(s->mutex));
-  int res = abs(a % s->allocated);
-  pthread_mutex_unlock(&(s->mutex));
-  return res;
+  return abs(a % s->allocated);
 }
 
 // ----------------------------------------------------------------------------
@@ -83,6 +79,7 @@ find(struct intset *s, int a)
 bool
 intset_add(struct intset *s, int a)
 {
+  pthread_mutex_lock(&s->mutex);
   // rehash if more than 70% is used
   if (s->size >= s->allocated * 7 / 10) {
     int old_allocated = s->allocated;
@@ -114,12 +111,14 @@ intset_add(struct intset *s, int a)
 
   int idx = find(s, a);
   if (s->data[idx] == a) {
+    pthread_mutex_unlock(&s->mutex);
     return false;
   }
 
   s->data[idx] = a;
   s->size++;
 
+  pthread_mutex_unlock(&s->mutex);
   return true;
 }
 
@@ -129,10 +128,10 @@ bool
 intset_contains(struct intset *s, int a)
 {
   // use private helper function above
+  pthread_mutex_lock(&s->mutex);
   int idx = find(s, a);
-  pthread_mutex_lock(&(s->mutex));
   bool found = (s->data[idx] == a);
-  pthread_mutex_unlock(&(s->mutex));
+  pthread_mutex_unlock(&s->mutex);
   return found;
 }
 
@@ -141,8 +140,8 @@ intset_contains(struct intset *s, int a)
 int
 intset_size(struct intset *s)
 {
-  pthread_mutex_lock(&(s->mutex));
+  pthread_mutex_lock(&s->mutex);
   int sz = s->size;
-  pthread_mutex_unlock(&(s->mutex));
+  pthread_mutex_unlock(&s->mutex);
   return sz;
 }
