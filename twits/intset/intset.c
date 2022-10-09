@@ -14,6 +14,7 @@ struct intset {
   int size;
   int allocated;
   int *data;
+  pthread_mutex_t mutex;
 };
 
 // special value indicating a free array element
@@ -32,6 +33,7 @@ intset_create()
     exit(1);
   }
 
+  pthread_mutex_init(&s->mutex, NULL);
   s->size = 0;
   s->allocated = 10;
   s->data = malloc(sizeof(int) * s->allocated);
@@ -48,7 +50,10 @@ intset_create()
 static int
 index(struct intset *s, int a)
 {
-  return abs(a % s->allocated);
+  pthread_mutex_lock(&(s->mutex));
+  int res = abs(a % s->allocated);
+  pthread_mutex_unlock(&(s->mutex));
+  return res;
 }
 
 // ----------------------------------------------------------------------------
@@ -125,8 +130,9 @@ intset_contains(struct intset *s, int a)
 {
   // use private helper function above
   int idx = find(s, a);
+  pthread_mutex_lock(&(s->mutex));
   bool found = (s->data[idx] == a);
-
+  pthread_mutex_unlock(&(s->mutex));
   return found;
 }
 
@@ -135,7 +141,8 @@ intset_contains(struct intset *s, int a)
 int
 intset_size(struct intset *s)
 {
+  pthread_mutex_lock(&(s->mutex));
   int sz = s->size;
-
+  pthread_mutex_unlock(&(s->mutex));
   return sz;
 }

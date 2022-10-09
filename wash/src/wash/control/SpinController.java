@@ -8,8 +8,8 @@ public class SpinController extends ActorThread<WashingMessage> {
 
 	private WashingIO io;
 	private ActorThread<WashingMessage> sender;
-	private Order order;
-	private State spinState;
+	private Order order = Order.SPIN_OFF;
+	private State spinState = State.STOP;
 
 	public enum State {
 		RIGHT, LEFT, FAST, STOP,
@@ -17,8 +17,6 @@ public class SpinController extends ActorThread<WashingMessage> {
 
 	public SpinController(WashingIO io) {
 		this.io = io;
-		this.spinState = State.STOP;
-		this.order = Order.SPIN_OFF;
 	}
 
 	@Override

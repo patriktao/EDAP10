@@ -35,7 +35,7 @@ public class WashingProgram2 extends ActorThread<WashingMessage> {
 		water.send(new WashingMessage(this, WATER_FILL));
 		ack = receive();
 		System.out.println("washing program 2 got " + ack);
-
+			
 		// Rotate Slowly
 		spin.send(new WashingMessage(this, SPIN_SLOW));
 		ack = receive();

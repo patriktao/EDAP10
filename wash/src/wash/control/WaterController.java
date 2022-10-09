@@ -5,14 +5,13 @@ import wash.control.WashingMessage.Order;
 import wash.io.WashingIO;
 
 public class WaterController extends ActorThread<WashingMessage> {
-
+ 
 	private WashingIO io;
+	private Order order = Order.WATER_IDLE;
 	private ActorThread<WashingMessage> sender;
-	private Order order;
-
+	
 	public WaterController(WashingIO io) {
 		this.io = io;
-		order = Order.WATER_IDLE;
 	}
 
 	public void sendAck() throws InterruptedException {

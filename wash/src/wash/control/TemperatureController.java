@@ -6,20 +6,16 @@ import wash.io.WashingIO;
 
 public class TemperatureController extends ActorThread<WashingMessage> {
 
-	private int dt;
+	private int dt = 10;
 	private WashingIO io;
-	private double m_u, m_l;
-	private Order order;
+	private double m_u = dt * 0.0478 + 0.2;
+	private double m_l = dt * 0.00952 + 0.2;
+	private Order order = Order.TEMP_IDLE;
 	private ActorThread<WashingMessage> sender;
-	private boolean heatOn;
+	private boolean heatOn = false;
 
 	public TemperatureController(WashingIO io) {
 		this.io = io;
-		dt = 10;
-		m_u = dt * 0.0478 + 0.2;
-		m_l = dt * 0.00952 + 0.2;
-		order = Order.TEMP_IDLE;
-		heatOn = false;
 	}
 
 	public void setTemp(int temp) throws InterruptedException {
@@ -30,7 +26,7 @@ public class TemperatureController extends ActorThread<WashingMessage> {
 				sendAck();
 				sender = null;
 			}
-		} else if (io.getTemperature() < (temp - 2 + m_l) && !heatOn && io.getWaterLevel() > 0) {
+		} else if (io.getTemperature() < (temp - 2 + m_l) && !heatOn && io.getWaterLevel() > 0.1) {
 			io.heat(true);
 			heatOn = true;
 		}
@@ -47,7 +43,7 @@ public class TemperatureController extends ActorThread<WashingMessage> {
 				// wait for up to a (simulated) minute for a WashingMessage
 				WashingMessage m = receiveWithTimeout(dt * 1000 / Settings.SPEEDUP);
 
-				// if m is null, it means a minute passed and no message was received
+				// if m is null, it means a 10 sec passed and no message was received
 				if (m != null) {
 					System.out.println("got " + m);
 					order = m.getOrder();
